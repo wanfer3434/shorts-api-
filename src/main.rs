@@ -1,4 +1,4 @@
-use axum::{routing::{get, post}, Json, Router, extract::State};
+use axum::{routing::{get, post}, Json, Router, extract::State, http::Uri};
 use serde::{Deserialize, Serialize};
 use std::{collections::VecDeque, sync::Arc, env};
 use tokio::sync::Mutex;
@@ -24,9 +24,11 @@ async fn main() {
     let cola: Cola = Arc::new(Mutex::new(VecDeque::new()));
     let app = Router::new()
         .route("/", get(|| async { "Shorts API OK" }))
-        .route("/cola", post(crear_idea))
+        .route("/cola", post(crear_idea).get(listar))
         .route("/cola/pendiente", get(dar_trabajo))
-        .route("/cola", get(listar))
+        .fallback(|uri: Uri| async move {
+            format!("Ruta no encontrada: {}", uri.path())
+        })
         .with_state(cola);
 
     let port = env::var("PORT").unwrap_or("8080".to_string());
